@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlainScore - is your writing easy to read?</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#1a1d24; color:#eceff6; line-height:1.5; }
+  .wrap { max-width:680px; margin:0 auto; padding:26px 18px 50px; }
+  h1 { font-size:28px; } h1 span { color:#7fd1ae; }
+  .sub { color:#a3abbd; margin:6px 0 18px; }
+  .card { background:#242933; border-radius:14px; padding:16px; margin-bottom:14px; }
+  textarea { width:100%; min-height:150px; background:#1a1d24; color:#eceff6; border:1px solid #3d4556; border-radius:10px; padding:12px; font-size:16px; font-family:inherit; resize:vertical; }
+  button { background:#323a49; color:#eceff6; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:14px; margin-top:10px; margin-right:6px; }
+  .top { display:flex; gap:22px; flex-wrap:wrap; align-items:center; } .big { font-size:46px; font-weight:800; color:#7fd1ae; line-height:1; }
+  .muted { color:#a3abbd; font-size:14px; } .lab { font-size:20px; font-weight:700; }
+  .bar { position:relative; height:12px; border-radius:6px; background:linear-gradient(90deg,#a33a3a,#a0701c 40%,#5a8f3d 70%,#1d6b45); margin-top:14px; } .bar i { position:absolute; top:-4px; width:4px; height:20px; background:#fff; border-radius:2px; }
+  .stats { display:flex; gap:20px; flex-wrap:wrap; } .stats div { min-width:90px; } .stats b { display:block; font-size:22px; }
+  .sent { background:#1a1d24; border-left:3px solid #a0701c; padding:8px 12px; margin-top:8px; border-radius:6px; font-size:14px; } .sent small { color:#a3abbd; display:block; }
+  .note { font-size:12.5px; color:#7c8498; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Plain<span>Score</span></h1>
+  <div class="sub">Paste your writing. See how easy it is to read, the school grade it needs, and your longest sentences.</div>
+  <div class="card"><textarea id="txt" placeholder="Paste text here"></textarea><button id="s1">Try plain text</button><button id="s2">Try dense text</button><button id="clr">Clear</button></div>
+  <div class="card"><div class="top"><div><div class="big" id="fre">-</div><div class="muted">Flesch Reading Ease</div></div><div><div class="lab" id="lab"></div><div class="muted" id="grade"></div></div></div><div class="bar"><i id="mark"></i></div></div>
+  <div class="card stats"><div><span class="muted">Words</span><b id="w">-</b></div><div><span class="muted">Sentences</span><b id="s">-</b></div><div><span class="muted">Words / sentence</span><b id="wps">-</b></div><div><span class="muted">Syllables / word</span><b id="spw">-</b></div><div><span class="muted">Reading time</span><b id="rt">-</b></div></div>
+  <div class="card"><b>Longest sentences</b><div id="long"><div class="muted">Nothing yet</div></div></div>
+  <div class="note">Flesch Reading Ease = 206.835 - 1.015 x (words per sentence) - 84.6 x (syllables per word); grade = Flesch-Kincaid. Syllables are counted by a vowel-group rule, sentences by end punctuation, so abbreviations and unusual words can shift the score by a few points. Reading time at 238 words per minute (adult non-fiction average, Brysbaert 2019). Your text never leaves your browser.</div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var P = window.Plain, $ = function (i) { return document.getElementById(i); };
+  var S1 = 'The cat sat on the mat. It was a warm day. The sun was out and the sky was blue. We went for a walk by the lake.';
+  var S2 = 'Notwithstanding the aforementioned considerations, organizational stakeholders should systematically evaluate comprehensive implementation methodologies before committing substantial resources toward unprecedented technological transformation initiatives.';
+  function esc(t) { return t.replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function render() {
+    var a = P.analyze($('txt').value);
+    if (!a) { ['fre', 'w', 's', 'wps', 'spw', 'rt'].forEach(function (i) { $(i).textContent = '-'; }); $('lab').textContent = ''; $('grade').textContent = 'Paste some text'; $('mark').style.left = '0'; $('long').innerHTML = '<div class="muted">Nothing yet</div>'; return; }
+    $('fre').textContent = Math.round(a.fre * 10) / 10; $('lab').textContent = a.band.label; $('grade').textContent = 'Reading level: ' + a.band.grade + ' (Flesch-Kincaid grade ' + (Math.round(a.grade * 10) / 10) + ')';
+    $('mark').style.left = 'calc(' + Math.max(0, Math.min(100, a.fre)) + '% - 2px)';
+    $('w').textContent = a.words; $('s').textContent = a.sentences; $('wps').textContent = (Math.round(a.wps * 10) / 10); $('spw').textContent = (Math.round(a.spw * 100) / 100);
+    $('rt').textContent = a.minutes < 1 ? Math.max(1, Math.round(a.minutes * 60)) + ' sec' : (Math.round(a.minutes * 10) / 10) + ' min';
+    $('long').innerHTML = a.longest.map(function (l) { return '<div class="sent"><small>' + l.words + ' words</small>' + esc(l.text) + '</div>'; }).join('');
+  }
+  $('txt').oninput = render;
+  $('s1').onclick = function () { $('txt').value = S1; render(); }; $('s2').onclick = function () { $('txt').value = S2; render(); }; $('clr').onclick = function () { $('txt').value = ''; render(); };
+  $('txt').value = S1; render();
+})();
+</script>
+</body>
+</html>
